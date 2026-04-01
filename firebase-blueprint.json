@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the SEO Optimizer SaaS",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "plan": { "type": "string", "enum": ["free", "day", "weekly", "monthly", "annual", "admin"] },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "plan", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user subscription data"
+    }
+  }
+}

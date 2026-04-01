@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "ahmedmohi5050@gmail.com" ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      // Users can read their own data, admins can read all data
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can only create their profile with default safe values
+      allow create: if isOwner(userId) 
+                    && request.resource.data.plan == 'free'
+                    && request.resource.data.status == 'inactive'
+                    && request.resource.data.role == 'user'
+                    && (!('usageCount' in request.resource.data) || request.resource.data.usageCount == 0);
+                    
+      // Admins can update anything. Users can ONLY update their usage stats.
+      allow update: if isAdmin() || (
+        isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usageDate', 'usageCount'])
+        && request.resource.data.usageCount is number
+        && request.resource.data.usageDate is string
+      );
+      
+      allow delete: if isAdmin();
+    }
+  }
+}
